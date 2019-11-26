@@ -29,7 +29,7 @@
  * SUCH DAMAGE.
  *
  *	@(#)socket.h	8.4 (Berkeley) 2/21/94
- * $FreeBSD$
+ * $FreeBSD: head/sys/sys/socket.h 338136 2018-08-21 14:04:30Z tuexen $
  */
 
 #ifndef _SYS_SOCKET_H_
@@ -172,7 +172,32 @@ typedef	__uintptr_t	uintptr_t;
 #define	SO_TS_CLOCK	0x1017		/* clock type used for SO_TIMESTAMP */
 #define	SO_MAX_PACING_RATE	0x1018	/* socket's max TX pacing rate (Linux name) */
 #define	SO_DOMAIN	0x1019		/* get socket domain */
+#define SO_REPAIR	0x1020
+#define SO_REPAIR_QUEUE	0x1021
+#define SO_QUEUE_SEQ	0x1022
+#define SO_MSS_WINDOW	0x1023
 #endif
+
+enum {
+	TCP_NO_QUEUE,
+	TCP_RECV_QUEUE,
+	TCP_SEND_QUEUE,
+	TCP_QUEUE_NR,
+};
+
+#define SK_NO_REUSE	0
+#define SK_CAN_REUSE	1
+#define SK_FORCE_REUSE	2
+
+struct msswnd {
+	__uint32_t	snd_wl1;
+	__uint32_t	snd_wnd;
+	__uint32_t	max_sndwnd;
+	__uint32_t	rcv_wnd;
+	__uint32_t	rcv_adv;
+	__uint32_t	t_maxseg;
+	__uint32_t	snd_scale;
+};
 
 #if __BSD_VISIBLE
 #define	SO_TS_REALTIME_MICRO	0	/* microsecond resolution, realtime */

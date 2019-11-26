@@ -32,7 +32,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
+__FBSDID("$FreeBSD: head/sys/kern/sys_socket.c 327844 2018-01-11 20:26:17Z tuexen $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -69,6 +69,7 @@ __FBSDID("$FreeBSD$");
 
 #include <netinet/in.h>
 #include <netinet/in_pcb.h>
+#include <netinet/tcp_var.h>
 
 #include <security/mac/mac_framework.h>
 
@@ -222,6 +223,14 @@ soo_ioctl(struct file *fp, u_long cmd, void *data, struct ucred *active_cred,
 			*(int *)data = 0;
 		else
 			*(int *)data = sbspace(&so->so_snd);
+		break;
+
+	case FIONUNWRITE:
+		{
+		struct inpcb *in = (struct inpcb *)(so->so_pcb);
+		struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+		*(int *)data = tp->snd_una + sbavail(&so->so_snd) - tp->snd_nxt;
+		}
 		break;
 
 	case FIOSETOWN:

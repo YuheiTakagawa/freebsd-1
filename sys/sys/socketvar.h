@@ -30,7 +30,7 @@
  *
  *	@(#)socketvar.h	8.3 (Berkeley) 2/19/95
  *
- * $FreeBSD$
+ * $FreeBSD: head/sys/sys/socketvar.h 344956 2019-03-09 01:37:00Z bz $
  */
 
 #ifndef _SYS_SOCKETVAR_H_
@@ -174,6 +174,9 @@ struct socket {
 			sbintime_t	sol_sbsnd_timeo;
 		};
 	};
+	int repair;
+	int repair_queue;
+	int sk_reuse;
 };
 #endif	/* defined(_KERNEL) || defined(_WANT_SOCKET) */
 
