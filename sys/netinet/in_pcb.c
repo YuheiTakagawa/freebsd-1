@@ -847,6 +847,10 @@ in_pcbbind_setup(struct inpcb *inp, struct sockaddr *nam, in_addr_t *laddrp,
 				return (EINVAL);
 			lport = sin->sin_port;
 		}
+		if (so->sk_reuse == SK_FORCE_REUSE) {
+			laddr = sin->sin_addr;
+			goto success;
+		}
 		/* NB: lport is left as 0 if the port isn't being changed. */
 		if (IN_MULTICAST(ntohl(sin->sin_addr.s_addr))) {
 			/*
@@ -951,6 +955,7 @@ in_pcbbind_setup(struct inpcb *inp, struct sockaddr *nam, in_addr_t *laddrp,
 			}
 		}
 	}
+success:
 	if (*lportp != 0)
 		lport = *lportp;
 	if (lport == 0) {

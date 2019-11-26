@@ -120,6 +120,8 @@ static int	tcp_connect(struct tcpcb *, struct sockaddr *,
 static int	tcp6_connect(struct tcpcb *, struct sockaddr *,
 		    struct thread *td);
 #endif /* INET6 */
+static void	tcp_repair_connect(struct tcpcb *, struct sockaddr *,
+		    struct thread *td);
 static void	tcp_disconnect(struct tcpcb *);
 static void	tcp_usrclosed(struct tcpcb *);
 static void	tcp_fill_info(struct tcpcb *, struct tcp_info *);
@@ -552,7 +554,11 @@ tcp_usr_connect(struct socket *so, struct sockaddr *nam, struct thread *td)
 	}
 	tp = intotcpcb(inp);
 	TCPDEBUG1();
-	if ((error = tcp_connect(tp, nam, td)) != 0)
+	if (so->repair) {
+		tcp_repair_connect(tp, nam, td);
+		soisconnected(so);
+		goto out;
+	} else if ((error = tcp_connect(tp, nam, td)) != 0)
 		goto out;
 #ifdef TCP_OFFLOAD
 	if (registered_toedevs > 0 &&
@@ -1492,6 +1498,9 @@ tcp_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
 		tp->request_r_scale++;
 
 	soisconnecting(so);
+	if (so->repair)
+		return 0;
+
 	TCPSTAT_INC(tcps_connattempt);
 	tcp_state_change(tp, TCPS_SYN_SENT);
 	tp->iss = tcp_new_isn(&inp->inp_inc);
@@ -1547,6 +1556,18 @@ out:
 	return error;
 }
 #endif /* INET6 */
+
+static
+void tcp_repair_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
+{
+	/* tp->irs is plus one in tcp_rcvseqinit, so tp->irs minus one */
+	tcp_connect(tp, nam, td);
+	tp->iss = tp->snd_nxt;
+	tp->irs = tp->rcv_nxt - 1;
+	tcp_state_change(tp, TCPS_ESTABLISHED);
+	tcp_sendseqinit(tp);
+	tcp_rcvseqinit(tp);
+}
 
 /*
  * Export TCP internal state information via a struct tcp_info, based on the
@@ -2369,7 +2390,9 @@ tcp_disconnect(struct tcpcb *tp)
 	 * Neither tcp_close() nor tcp_drop() should return NULL, as the
 	 * socket is still open.
 	 */
-	if (tp->t_state < TCPS_ESTABLISHED &&
+	if (so->repair) {
+		tp = tcp_close(tp);
+	} else if (tp->t_state < TCPS_ESTABLISHED &&
 	    !(tp->t_state > TCPS_LISTEN && IS_FASTOPEN(tp->t_flags))) {
 		tp = tcp_close(tp);
 		KASSERT(tp != NULL,

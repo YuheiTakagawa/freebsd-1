@@ -34,18 +34,19 @@
  * SUCH DAMAGE.
  *
  *	@(#)filio.h	8.1 (Berkeley) 3/28/94
- * $FreeBSD$
+ * $FreeBSD: head/sys/sys/filio.h 349233 2019-06-20 14:35:28Z asomers $
  */
 
 #ifndef	_SYS_FILIO_H_
 #define	_SYS_FILIO_H_
 
-#include <sys/_types.h>
+#include <sys/types.h>
 #include <sys/ioccom.h>
 
 /* Generic file-descriptor ioctl's. */
 #define	FIOCLEX		 _IO('f', 1)		/* set close on exec on fd */
 #define	FIONCLEX	 _IO('f', 2)		/* remove close on exec */
+#define FIONUNWRITE	_IOR('f', 128, int)	/* tcp repair get unsend size */
 #define	FIONREAD	_IOR('f', 127, int)	/* get # bytes to read */
 #define	FIONBIO		_IOW('f', 126, int)	/* set/clear non-blocking i/o */
 #define	FIOASYNC	_IOW('f', 125, int)	/* set/clear async i/o */
@@ -64,12 +65,12 @@ struct fiodgname_arg {
 #define	FIOSEEKDATA	_IOWR('f', 97, off_t)	/* SEEK_DATA */
 #define	FIOSEEKHOLE	_IOWR('f', 98, off_t)	/* SEEK_HOLE */
 struct fiobmap2_arg {
-	__daddr_t	bn;
-	int		runp;
-	int		runb;
+	int64_t	bn;
+	int	runp;
+	int	runb;
 };
-/* Get the file's bmap info for the logical block bn. */
-#define	FIOBMAP2	_IOWR('f', 99, struct fiobmap2_arg)
+/* Get the file's bmap info for the logical block bn */
+#define FIOBMAP2	_IOWR('f', 99, struct fiobmap2_arg)
 
 #ifdef _KERNEL
 #ifdef COMPAT_FREEBSD32
